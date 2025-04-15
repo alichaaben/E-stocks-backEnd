@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/facture")
+@RequestMapping("/factures")
 @CrossOrigin("*")
 public class FactureController {
 

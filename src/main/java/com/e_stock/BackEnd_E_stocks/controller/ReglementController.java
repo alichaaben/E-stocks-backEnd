@@ -15,7 +15,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/reglement")
+@RequestMapping("/reglements")
 @CrossOrigin("*")
 public class ReglementController {
 
@@ -30,11 +30,17 @@ public class ReglementController {
         return ResponseEntity.ok(reglementMapper.map(reglement));
     }
 
-    @PostMapping
-    public ResponseEntity<ReglementDto> createOperation(@RequestBody ReglementDto reglementDto) {
-        Reglement reglement = reglementMapper.unMap(reglementDto);
-        Reglement savedReglement = reglementService.insert(reglement);
-        return ResponseEntity.ok(reglementMapper.map(savedReglement));
+    @PostMapping("/add")
+    public ResponseEntity<ReglementDto> ajouterReglement(@RequestBody ReglementDto dto) {
+        Reglement reglement = reglementMapper.unMap(dto);
+        Facture facture = factureService.findById(dto.getFactureId());
+        reglement.setFacture(facture);
+    
+        Reglement saved = reglementService.insertByIdFact(reglement);
+        return ResponseEntity.ok(reglementMapper.map(saved));
     }
+    
+
+
 
 }

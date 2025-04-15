@@ -26,5 +26,4 @@ public class FactureDto {
     private double TVA;
     private double totalTTC;
     private List<OperationDto> operations;
-    // private List<Reglement> reglements;
 }

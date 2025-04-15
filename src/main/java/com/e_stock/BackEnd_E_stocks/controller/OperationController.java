@@ -14,7 +14,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/operation")
+@RequestMapping("/operations")
 @CrossOrigin("*")
 public class OperationController {
 

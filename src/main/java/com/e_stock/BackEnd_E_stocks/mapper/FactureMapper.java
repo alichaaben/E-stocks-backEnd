@@ -12,9 +12,11 @@ import java.util.List;
 public interface FactureMapper {
     
     @Mapping(source = "type", target = "type", qualifiedByName = "typeFactureToString")
+    @Mapping(source = "reglement", target = "reglement")
     FactureDto map(Facture entity);
     
     @Mapping(source = "type", target = "type", qualifiedByName = "stringToTypeFacture")
+    @Mapping(source = "reglement", target = "reglements", ignore = true)
     Facture unMap(FactureDto dto);
     
     List<FactureDto> map(List<Facture> entities);
