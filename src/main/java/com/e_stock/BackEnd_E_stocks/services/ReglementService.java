@@ -13,4 +13,8 @@ public interface ReglementService {
 
     Reglement insertByIdFact(Reglement reglement);
 
+    Reglement updateReglement(Reglement reglement);
+
+    void deleteById(Long id);
+
 }

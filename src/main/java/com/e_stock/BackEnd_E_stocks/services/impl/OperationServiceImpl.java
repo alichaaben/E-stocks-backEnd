@@ -32,4 +32,27 @@ public class OperationServiceImpl implements OperationService {
         }
         return operationRepository.save(operation);
     }
+
+
+    @Override
+    public Operation update(Operation Entity) {
+        Operation currentOperation = operationRepository.findById(Entity.getId())
+        .orElseThrow(() -> new IllegalArgumentException("Operation not found"));
+
+        currentOperation.setDate(Entity.getDate());
+        currentOperation.setType(Entity.getType());
+        currentOperation.setReference(Entity.getReference());
+        currentOperation.setDesignation(Entity.getDesignation());
+        currentOperation.setQuantite(Entity.getQuantite());
+        currentOperation.setPrix(Entity.getPrix());
+        currentOperation.setTotal(Entity.getTotal());
+        
+        return operationRepository.save(currentOperation);
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        operationRepository.deleteById(id);
+    }
+
 }

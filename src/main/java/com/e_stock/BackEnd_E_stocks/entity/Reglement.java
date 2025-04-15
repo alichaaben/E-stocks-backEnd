@@ -22,7 +22,7 @@ public class Reglement {
     private double montantTotal;
     private String numFact;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "id_facture")
     private Facture facture;
 }

@@ -32,7 +32,7 @@ public class Operation {
     @JoinColumn(name = "id_produit", nullable = false)
     private Produit produit;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false,cascade = CascadeType.ALL)
     @JoinColumn(name = "id_facture", nullable = false)
     private Facture facture;
 

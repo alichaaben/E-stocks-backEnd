@@ -11,4 +11,8 @@ public interface OperationService {
 
     Operation insert(Operation operation);
 
+    Operation update(Operation operation);
+
+    void deleteById(Long id);
+
 }

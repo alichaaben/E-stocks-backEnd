@@ -29,4 +29,19 @@ public class FactureController {
         Facture facture = factureService.findById(id);
         return ResponseEntity.ok(factureMapper.map(facture));
     }
+
+    // @PutMapping("/{id}")
+    // public ResponseEntity<FactureDto> updateFacture(@PathVariable Long id, @RequestBody FactureDto factureDto) {
+    //     Facture factureToUpdate = factureMapper.unMap(factureDto);
+    //     factureToUpdate.setId(id); // Assure que l'ID est bien défini
+    //     Facture updatedFacture = factureService.update(factureToUpdate);
+    //     return ResponseEntity.ok(factureMapper.map(updatedFacture));
+    // }
+
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteUser(@PathVariable Long id) {
+        factureService.deleteById(id);
+        return ResponseEntity.ok("Invoice with ID " + id + " successfully deleted.");
+    }
 }

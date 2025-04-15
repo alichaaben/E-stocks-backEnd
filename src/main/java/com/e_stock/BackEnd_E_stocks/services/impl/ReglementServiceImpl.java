@@ -43,8 +43,6 @@ public class ReglementServiceImpl implements ReglementService {
 
         Facture facture = reglement.getFacture();
 
-        // On suppose que l'entité `facture` est attachée, sinon il faut la charger
-        // depuis la base
         double montantRestant = facture.getMontantRestant() - reglement.getReglement();
         facture.setMontantRestant(montantRestant);
 
@@ -61,6 +59,48 @@ public class ReglementServiceImpl implements ReglementService {
         reglement.setFacture(facture);
 
         return reglementRepository.save(reglement);
+    }
+
+    @Override
+    @Transactional
+    public Reglement updateReglement(Reglement Entity) {
+        Reglement currentReglement = reglementRepository.findById(Entity.getId())
+            .orElseThrow(() -> new IllegalArgumentException("Reglement not found"));
+    
+        if (Entity.getFacture() == null || Entity.getFacture().getId() == null) {
+            throw new IllegalArgumentException("Facture ID is required");
+        }
+    
+        Facture facture = Entity.getFacture();
+        
+        // Calculate the difference between old and new payment amounts
+        double paymentDifference = Entity.getReglement() - currentReglement.getReglement();
+        
+        // Update the remaining amount
+        double montantRestant = facture.getMontantRestant() - paymentDifference;
+        facture.setMontantRestant(montantRestant);
+    
+        // Update status
+        if (Math.abs(montantRestant) < 0.01) {
+            facture.setStatus("payée");
+        } else {
+            facture.setStatus("impayée");
+        }
+    
+        // Update reglement fields
+        currentReglement.setDate(Entity.getDate());
+        currentReglement.setReglement(Entity.getReglement());
+        currentReglement.setMontantTotal(facture.getTotalTTC());
+        currentReglement.setMontantRestant(montantRestant);
+        currentReglement.setNumFact(facture.getNumeroFacture());
+        currentReglement.setFacture(facture);
+        
+        return reglementRepository.save(currentReglement);
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        reglementRepository.deleteById(id);
     }
 
 }

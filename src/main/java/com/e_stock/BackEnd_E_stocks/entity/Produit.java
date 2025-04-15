@@ -24,7 +24,7 @@ public class Produit {
     private double prixUnitaire;
     private double total;
 
-    @OneToMany(mappedBy = "produit", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "produit")
     private List<Operation> operations;
 
 }
