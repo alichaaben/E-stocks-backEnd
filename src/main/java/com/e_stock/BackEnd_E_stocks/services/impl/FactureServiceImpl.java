@@ -75,28 +75,44 @@ public class FactureServiceImpl implements FactureService {
             Produit produitFinal;
     
             if (produitEnBase != null) {
-                int nouvelleQuantite = produitEnBase.getQuantite() + produitFacture.getQuantite();
-                produitEnBase.setQuantite(nouvelleQuantite);
-                produitEnBase.setTotal(nouvelleQuantite * produitEnBase.getPrixUnitaire());
+                // Calcul CUMP
+                int ancienneQuantite = produitEnBase.getQuantite();
+                double ancienPrix = produitEnBase.getPrixUnitaire();
+    
+                int nouvelleQuantite = produitFacture.getQuantite();
+                double nouveauPrix = produitFacture.getPrixUnitaire();
+    
+                int quantiteTotale = ancienneQuantite + nouvelleQuantite;
+                double cump = ((ancienneQuantite * ancienPrix) + (nouvelleQuantite * nouveauPrix)) / quantiteTotale;
+    
+                // Mise à jour du produit existant
+                produitEnBase.setQuantite(quantiteTotale);
+                produitEnBase.setPrixUnitaire(cump);
+                produitEnBase.setTotal(quantiteTotale * cump);
+    
                 produitFinal = produitRepository.save(produitEnBase);
+    
             } else {
+                // Nouveau produit
                 Produit nouveauProduit = Produit.builder()
                         .designation(produitFacture.getDesignation())
                         .quantite(produitFacture.getQuantite())
                         .prixUnitaire(produitFacture.getPrixUnitaire())
                         .total(produitFacture.getQuantite() * produitFacture.getPrixUnitaire())
                         .build();
+    
                 produitFinal = produitService.insert(nouveauProduit);
             }
     
+            // Créer l'opération associée
             Operation nouvelleOperation = Operation.builder()
                     .date(LocalDate.now())
                     .type(TypeOperation.ENTREE)
                     .reference(produitFinal.getReference())
                     .designation(produitFacture.getDesignation())
                     .quantite(produitFacture.getQuantite())
-                    .prix(produitFacture.getPrixUnitaire())
-                    .total(produitFacture.getTotal())
+                    .prix(produitFacture.getPrixUnitaire()) // Prix réel de la facture
+                    .total(produitFacture.getQuantite() * produitFacture.getPrixUnitaire())
                     .produit(produitFinal)
                     .facture(facture)
                     .build();
@@ -106,6 +122,7 @@ public class FactureServiceImpl implements FactureService {
     
         return savedOperations;
     }
+    
 
 
     /****************************** CLIENTS ************************** */
