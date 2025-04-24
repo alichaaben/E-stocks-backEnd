@@ -46,4 +46,8 @@ public class Facture {
 
     @OneToMany(mappedBy = "facture", cascade = CascadeType.ALL)
     private List<Reglement> reglements;
+
+    @ManyToOne
+    @JoinColumn(name = "societe_id")
+    private InfoSociete societe;
 }
