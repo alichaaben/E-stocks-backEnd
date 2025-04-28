@@ -5,12 +5,14 @@ import org.springframework.stereotype.Service;
 import com.e_stock.BackEnd_E_stocks.Exceptions.ProduitInexistantException;
 import com.e_stock.BackEnd_E_stocks.Exceptions.StockInsuffisantException;
 import com.e_stock.BackEnd_E_stocks.entity.Facture;
+import com.e_stock.BackEnd_E_stocks.entity.InfoSociete;
 import com.e_stock.BackEnd_E_stocks.entity.Operation;
 import com.e_stock.BackEnd_E_stocks.entity.Produit;
 import com.e_stock.BackEnd_E_stocks.entity.Reglement;
 import com.e_stock.BackEnd_E_stocks.entity.TypeFacture;
 import com.e_stock.BackEnd_E_stocks.entity.TypeOperation;
 import com.e_stock.BackEnd_E_stocks.repository.FactureRepository;
+import com.e_stock.BackEnd_E_stocks.repository.InfoSocieteRepository;
 import com.e_stock.BackEnd_E_stocks.repository.ProduitRepository;
 import com.e_stock.BackEnd_E_stocks.services.FactureService;
 import com.e_stock.BackEnd_E_stocks.services.OperationService;
@@ -32,6 +34,7 @@ public class FactureServiceImpl implements FactureService {
     private final ProduitRepository produitRepository;
     private final ReglementService reglementService;
     private final OperationService operationService;
+    private final InfoSocieteRepository infoSocieteRepository;
 
     @Override
     public Facture findById(Long id) {
@@ -42,12 +45,18 @@ public class FactureServiceImpl implements FactureService {
     @Override
     @Transactional
     public Facture insert(Facture facture) {
+        // Toujours lier la facture à la société avec ID = 1
+        InfoSociete societe = infoSocieteRepository.findById(1L)
+                .orElseThrow(() -> new RuntimeException("InfoSociete avec ID 1 introuvable"));
+
+        facture.setSociete(societe);
+
         List<Operation> operations = facture.getOperations();
         facture.setOperations(new ArrayList<>());
-    
+
         Facture savedFacture = factureRepository.save(facture);
         List<Operation> savedOperations;
-    
+
         if (facture.getType() == TypeFacture.FOURNISSEUR) {
             savedOperations = handleFournisseurOperations(operations, savedFacture);
         } else if (facture.getType() == TypeFacture.CLIENT) {
@@ -55,43 +64,41 @@ public class FactureServiceImpl implements FactureService {
         } else {
             throw new IllegalArgumentException("Type de facture inconnu : " + facture.getType());
         }
-    
+
         savedFacture.setOperations(savedOperations);
         handleReglement(savedFacture);
-    
+
         return factureRepository.save(savedFacture);
     }
-    
 
     /************************ FOURNISSEURS ************************** */
 
-
     private List<Operation> handleFournisseurOperations(List<Operation> operations, Facture facture) {
         List<Operation> savedOperations = new ArrayList<>();
-    
+
         for (Operation op : operations) {
             Produit produitFacture = op.getProduit();
             Produit produitEnBase = produitRepository.findByDesignation(produitFacture.getDesignation());
             Produit produitFinal;
-    
+
             if (produitEnBase != null) {
                 // Calcul CUMP
                 int ancienneQuantite = produitEnBase.getQuantite();
                 double ancienPrix = produitEnBase.getPrixUnitaire();
-    
+
                 int nouvelleQuantite = produitFacture.getQuantite();
                 double nouveauPrix = produitFacture.getPrixUnitaire();
-    
+
                 int quantiteTotale = ancienneQuantite + nouvelleQuantite;
                 double cump = ((ancienneQuantite * ancienPrix) + (nouvelleQuantite * nouveauPrix)) / quantiteTotale;
-    
+
                 // Mise à jour du produit existant
                 produitEnBase.setQuantite(quantiteTotale);
                 produitEnBase.setPrixUnitaire(cump);
                 produitEnBase.setTotal(quantiteTotale * cump);
-    
+
                 produitFinal = produitRepository.save(produitEnBase);
-    
+
             } else {
                 // Nouveau produit
                 Produit nouveauProduit = Produit.builder()
@@ -100,10 +107,10 @@ public class FactureServiceImpl implements FactureService {
                         .prixUnitaire(produitFacture.getPrixUnitaire())
                         .total(produitFacture.getQuantite() * produitFacture.getPrixUnitaire())
                         .build();
-    
+
                 produitFinal = produitService.insert(nouveauProduit);
             }
-    
+
             // Créer l'opération associée
             Operation nouvelleOperation = Operation.builder()
                     .date(LocalDate.now())
@@ -116,64 +123,63 @@ public class FactureServiceImpl implements FactureService {
                     .produit(produitFinal)
                     .facture(facture)
                     .build();
-    
+
             savedOperations.add(nouvelleOperation);
         }
-    
+
         return savedOperations;
     }
-    
-
 
     /****************************** CLIENTS ************************** */
     private List<Operation> handleClientOperations(List<Operation> operations, Facture facture) {
         List<Operation> savedOperations = new ArrayList<>();
-    
+
         for (Operation op : operations) {
             Produit p = op.getProduit();
             Produit produitEnBase = produitRepository.findByDesignation(p.getDesignation());
-    
+
             if (produitEnBase == null) {
                 throw new ProduitInexistantException("Produit inexistant : " + p.getDesignation());
             }
-    
+
             int nouvelleQte = produitEnBase.getQuantite() - p.getQuantite();
             if (nouvelleQte < 0) {
                 throw new StockInsuffisantException("Stock insuffisant pour le produit : " + p.getDesignation());
             }
-    
+
             produitEnBase.setQuantite(nouvelleQte);
             produitEnBase.setTotal(nouvelleQte * produitEnBase.getPrixUnitaire());
             produitRepository.save(produitEnBase);
-    
+
             savedOperations.add(Operation.builder()
-                .date(LocalDate.now())
-                .type(TypeOperation.SORTIE)
-                .reference(produitEnBase.getReference())
-                .designation(p.getDesignation())
-                .quantite(p.getQuantite())
-                .prix(p.getPrixUnitaire())
-                .total(p.getTotal())
-                .produit(produitEnBase)
-                .facture(facture)
-                .build());
+                    .date(LocalDate.now())
+                    .type(TypeOperation.SORTIE)
+                    .reference(produitEnBase.getReference())
+                    .designation(p.getDesignation())
+                    .quantite(p.getQuantite())
+                    .prix(p.getPrixUnitaire())
+                    .total(p.getTotal())
+                    .produit(produitEnBase)
+                    .facture(facture)
+                    .build());
         }
-    
+
         return savedOperations;
     }
-    
 
-    /*********************************Reglements*********************************** */
+    /*********************************
+     * Reglements***********************************
+     */
 
     private void handleReglement(Facture facture) {
         double montantTotal = facture.getTotalTTC();
         double montantRegle = facture.getReglement();
         double montantRestant = montantTotal - montantRegle;
-    
+
         facture.setMontantRestant(montantRestant);
-    
+
         facture.setStatus(montantRestant <= 0.01 ? "payée" : "impayée");
-    
+
         Reglement reglement = Reglement.builder()
                 .date(LocalDate.now())
                 .montantTotal(montantTotal)
@@ -182,13 +188,11 @@ public class FactureServiceImpl implements FactureService {
                 .numFact(facture.getNumeroFacture())
                 .facture(facture)
                 .build();
-    
+
         reglementService.insert(reglement);
     }
-    
 
     /***************************************************************************** */
-
 
     @Override
     @Transactional

@@ -13,10 +13,12 @@ public interface FactureMapper {
     
     @Mapping(source = "type", target = "type", qualifiedByName = "typeFactureToString")
     @Mapping(source = "reglement", target = "reglement")
+    @Mapping(source = "societe.id", target = "infoSociete")
     FactureDto map(Facture entity);
     
     @Mapping(source = "type", target = "type", qualifiedByName = "stringToTypeFacture")
     @Mapping(source = "reglement", target = "reglements", ignore = true)
+    @Mapping(source = "infoSociete", target = "societe", ignore = true)
     Facture unMap(FactureDto dto);
     
     List<FactureDto> map(List<Facture> entities);
